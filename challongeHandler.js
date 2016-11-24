@@ -1,9 +1,14 @@
 /**
  * challongeHandler.js
  *
- * Detect and report challonge tournaments.
+ * Display, Join, Create, and Delete challonge tournaments.
  */
 (function() {
+    var HttpResponse = Packages.com.gmt2001.HttpResponse,
+        HttpRequest = Packages.com.gmt2001.HttpRequest,
+        HashMap = Packages.java.util.HashMap,
+        url;
+
 
     /**
      * @function getChallengeData
@@ -16,10 +21,7 @@
             return;
         }
 
-        var url = 'https://api.challonge.com/v1/tournaments.json?api_key=' + $.inidb.get('challonge', 'key') + '&state=all',
-            HttpResponse = Packages.com.gmt2001.HttpResponse,
-            HttpRequest = Packages.com.gmt2001.HttpRequest,
-            HashMap = Packages.java.util.HashMap,
+        url = 'https://api.challonge.com/v1/tournaments.json?api_key=' + $.inidb.get('challonge', 'key') + '&state=all',
             responseData = HttpRequest.getData(HttpRequest.RequestType.GET, url, "", new HashMap()),
             jsonObj = JSON.parse(responseData.content),
             jsonName = jsonObj[0].tournament.name,

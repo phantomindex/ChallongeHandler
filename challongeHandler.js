@@ -8,7 +8,7 @@
         HttpRequest = Packages.com.gmt2001.HttpRequest,
         HashMap = Packages.java.util.HashMap,
         apiKey = $.inidb.get('challonge', 'key'),
-        url;
+        url = 'https://api.challonge.com/v1/tournaments.json?api_key=' + apiKey + '&state=all';
 
 
     /**
@@ -17,7 +17,6 @@
      */
     function getChallongeData(sender) {
 
-            url = 'https://api.challonge.com/v1/tournaments.json?api_key=' + apiKey + '&state=all',
             responseData = HttpRequest.getData(HttpRequest.RequestType.GET, url, "", new HashMap()),
             jsonObj = JSON.parse(responseData.content),
             jsonLength = (jsonObj.length - 1),
@@ -33,7 +32,8 @@
             jsonDate = jsonObj[jsonLength].tournament.start_at,
             jsonStarted = jsonObj[jsonLength].tournament.started_at,
             jsonCompleted = jsonObj[jsonLength].tournament.completed_at,
-            jsonSignUp = jsonObj[jsonLength].tournament.sign_up_url;
+            jsonSignUrl = jsonObj[jsonLength].tournament.sign_up_url;
+            jsonSignUp = jsonObj[jsonLength].tournament.open_signup;
 
         if (jsonState != 'complete') {
             jsonState = 'Progress: ' + jsonProgress;
@@ -41,8 +41,8 @@
             jsonState = "(Finished)"
         }
 
-        if (jsonsignUp != null) {
-          jsonUrl = jsonsignUp;
+        if (jsonSignUp != false) {
+          jsonUrl = jsonSignUrl;
         }
 
         if (jsonTeams != 'true') {
@@ -53,7 +53,7 @@
 
         if (jsonDate === null || jsonLength === undefined) {
             $.say('No Pending Tournaments!');
-            //$.say($.lang.get('challongeHandler.tournament.none');
+            //$.say($.lang.get('challongeHandler.tournament.404');
             return;
         }
 
@@ -84,11 +84,30 @@
 
     /**
      * @function registerChallenger
-     * @param sender
+     * @param action
      * @return registers sender to the latest tournament
      */
-    function registerChallenger(sender) {
+    function registerChallenger(sender, action) {
+      var responseData = HttpRequest.getData(HttpRequest.RequestType.GET, url, "", new HashMap()),
+      jsonObj = JSON.parse(responseData.content),
+      jsonLength = (jsonObj.length - 1),
+      jsonSignUrl = jsonObj[jsonLength].tournament.sign_up_url,
+      jsonSignUp = jsonObj[jsonLength].tournament.open_signup;
 
+      if (jsonSignUp === false && action === undefined) {
+          $.say("Please specify a challonge username to register: !signup <challongename>");
+          return;
+        //$.say($.lang.get('challongeHandler.signup.404');
+      } else if (action === undefined){
+        $.say("Signup: " + jsonSignUrl);
+        return;
+          //$.say($.lang.get('challongeHandler.signup.link');
+      } else {
+        //needs code to POST name into the tournament
+        $.say($.whisperPrefix(sender) + 'has registered to the tournament as: ' + action + '!');
+        //$.say($.lang.get('challongeHandler.signup.registered');
+        return;
+      }
     }
 
     /**
@@ -104,6 +123,14 @@
      * @return Checks to see if the tournament ended
      */
     function tournamentEnded(event) {
+
+    }
+
+    /**
+     * @function reportMatch
+     * @return checks if a match has ended and reports it in chat
+     */
+    function reportMatch(event) {
 
     }
 
@@ -139,7 +166,7 @@
         }
 
         if (command.equalsIgnoreCase('signup')) {
-            registerChallenger(sender)
+            registerChallenger(sender, action)
         }
     });
 

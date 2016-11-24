@@ -7,6 +7,7 @@
     var HttpResponse = Packages.com.gmt2001.HttpResponse,
         HttpRequest = Packages.com.gmt2001.HttpRequest,
         HashMap = Packages.java.util.HashMap,
+        apiKey = $.inidb.get('challonge', 'key'),
         url;
 
 
@@ -16,22 +17,19 @@
      */
     function getChallongeData(sender) {
 
-        if ($.inidb.get('challonge', 'key') === undefined) {
-            $.say('Please make sure you\'ve set your Challonge API Key using !challongeKey');
-            return;
-        }
-
-        url = 'https://api.challonge.com/v1/tournaments.json?api_key=' + $.inidb.get('challonge', 'key') + '&state=all',
+            url = 'https://api.challonge.com/v1/tournaments.json?api_key=' + apiKey + '&state=all',
             responseData = HttpRequest.getData(HttpRequest.RequestType.GET, url, "", new HashMap()),
             jsonObj = JSON.parse(responseData.content),
-            jsonName = jsonObj[0].tournament.name,
-            jsonUrl = jsonObj[0].tournament.full_challonge_url,
-            jsonState = jsonObj[0].tournament.state,
-            jsonProgress = jsonObj[0].tournament.progress_meter,
-            jsonGame = jsonObj[0].tournament.game_name,
-            jsonCount = jsonObj[0].tournament.participants_count,
-            jsonType = jsonObj[0].tournament.tournament_type,
-            jsonDate = jsonObj[0].tournament.start_at;
+            jsonLength = (jsonObj.length - 1),
+            jsonName = jsonObj[jsonLength].tournament.name,
+            jsonUrl = jsonObj[jsonLength].tournament.full_challonge_url,
+            jsonState = jsonObj[jsonLength].tournament.state,
+            jsonProgress = jsonObj[jsonLength].tournament.progress_meter,
+            jsonGame = jsonObj[jsonLength].tournament.game_name,
+            jsonCount = jsonObj[jsonLength].tournament.participants_count,
+            jsonCapCount = jsonObj[jsonLength].tournament.signup_cap,
+            jsonType = jsonObj[jsonLength].tournament.tournament_type,
+            jsonDate = jsonObj[jsonLength].tournament.start_at;
 
 
         if (jsonState != 'complete') {
@@ -40,15 +38,15 @@
             jsonState = "(Finished)"
         }
 
-        if (jsonDate === null || jsonObj[0].tournament.name === undefined) {
+        if (jsonDate === null || jsonObj[jsonLength].tournament.name === undefined) {
             $.say('No Pending Tournaments!');
             return;
         }
 
         if (jsonProgress === 0) {
-            jsonState = 'Date: ' + jsonDate;
+            jsonState = 'Date: ' + Date(jsonDate);
         }
-        $.say('Latest Tournament: ' + jsonGame + ' - Settings: ' + jsonCount + ' Player ' + jsonType + ' - ' + jsonState + ' - ' + jsonUrl);
+        $.say('Latest Tournament: ' + jsonGame + ' - ' + jsonType + ' - ('  + jsonCount + '/' + jsonCapCount + ' Challengers) ' + jsonState + ' - ' + jsonUrl);
     }
 
     /**
@@ -87,6 +85,10 @@
             subAction = args[1];
 
         if (command.equalsIgnoreCase('tournament')) {
+          if (!$.inidb.exists('challonge', 'key')) {
+              $.say('You need to set your Challonge API Key using: !challongekey <api key>');
+              return;
+          }
             getChallongeData()
         }
 

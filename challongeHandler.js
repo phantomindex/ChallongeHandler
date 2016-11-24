@@ -29,8 +29,11 @@
             jsonCount = jsonObj[jsonLength].tournament.participants_count,
             jsonCapCount = jsonObj[jsonLength].tournament.signup_cap,
             jsonType = jsonObj[jsonLength].tournament.tournament_type,
-            jsonDate = jsonObj[jsonLength].tournament.start_at;
-
+            jsonTeams = jsonObj[jsonLength].tournament.teams,
+            jsonDate = jsonObj[jsonLength].tournament.start_at,
+            jsonStarted = jsonObj[jsonLength].tournament.started_at,
+            jsonCompleted = jsonObj[jsonLength].tournament.completed_at,
+            jsonSignUp = jsonObj[jsonLength].tournament.sign_up_url;
 
         if (jsonState != 'complete') {
             jsonState = 'Progress: ' + jsonProgress;
@@ -38,15 +41,27 @@
             jsonState = "(Finished)"
         }
 
-        if (jsonDate === null || jsonObj[jsonLength].tournament.name === undefined) {
+        if (jsonsignUp != null) {
+          jsonUrl = jsonsignUp;
+        }
+
+        if (jsonTeams != 'true') {
+          jsonTeams = '';
+        } else {
+          jsonTeams = 'Team ';
+        }
+
+        if (jsonDate === null || jsonLength === undefined) {
             $.say('No Pending Tournaments!');
+            //$.say($.lang.get('challongeHandler.tournament.none');
             return;
         }
 
         if (jsonProgress === 0) {
             jsonState = 'Date: ' + Date(jsonDate);
         }
-        $.say('Latest Tournament: ' + jsonGame + ' - ' + jsonType + ' - ('  + jsonCount + '/' + jsonCapCount + ' Challengers) ' + jsonState + ' - ' + jsonUrl);
+        $.say('Latest Tournament: ' + jsonGame + ' - ' + jsonTeams + toTitleCase(jsonType) + ' - ('  + jsonCount + '/' + jsonCapCount + ' Challengers) '  + jsonState + ' - ' + jsonUrl);
+        //$.say($.lang.get('challongeHandler.tournament.message', jsonGame, jsonTeams, toTitleCase(jsonType), jsonCount, jsonCapCount, jsonState, jsonUrl));
     }
 
     /**
@@ -57,10 +72,12 @@
     function setChallongeKey(key) {
         if (key === undefined) {
             $.say("Usage: !challongekey <API Key in your challonge settings>");
+            //$.say($.lang.get('challongeHandler.key.404');
             return;
         }
 
         $.say("Challonge API Key set! Key: " + key);
+        //$.say($.lang.get('challongeHandler.key.success', key);
         $.inidb.set('challonge', 'key', key);
         return;
     }
@@ -72,6 +89,30 @@
      */
     function registerChallenger(sender) {
 
+    }
+
+    /**
+     * @function tournamentStarted
+     * @return Checks to see if the tournament started
+     */
+    function tournamentStarted(event) {
+
+    }
+
+    /**
+     * @function tournamentEnded
+     * @return Checks to see if the tournament ended
+     */
+    function tournamentEnded(event) {
+
+    }
+
+    /**
+     * @function toTitleCase
+     * @return Capitalize the first letter of each word
+     */
+    function toTitleCase(string) {
+      return string.replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();});
     }
 
     /**
@@ -87,6 +128,7 @@
         if (command.equalsIgnoreCase('tournament')) {
           if (!$.inidb.exists('challonge', 'key')) {
               $.say('You need to set your Challonge API Key using: !challongekey <api key>');
+              //$.say($.lang.get('challongeHandler.key.missing');
               return;
           }
             getChallongeData()

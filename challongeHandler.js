@@ -8,11 +8,14 @@
         HttpRequest = Packages.com.gmt2001.HttpRequest,
         HashMap = Packages.java.util.HashMap,
         apiKey = $.inidb.get('challonge', 'key'),
-        tournament = 'https://api.challonge.com/v1/tournaments.json?api_key=' + apiKey + '&state=all';
+        tournament = 'https://api.challonge.com/v1/tournaments.json?api_key=' + apiKey + '&state=all',
         responseData = HttpRequest.getData(HttpRequest.RequestType.GET, tournament, "", new HashMap()),
         jsonObj = JSON.parse(responseData.content),
         jsonLength = (jsonObj.length - 1),
-        jsonID = jsonObj[jsonLength].tournament.url;
+        jsonID = jsonObj[jsonLength].tournament.url,
+        interval;
+        startCycle();
+        resetCycle();
 
 
     /**
@@ -21,7 +24,7 @@
      */
     function getChallongeData(sender) {
 
-            responseData = HttpRequest.getData(HttpRequest.RequestType.GET, tournament, "", new HashMap()),
+        var responseData = HttpRequest.getData(HttpRequest.RequestType.GET, tournament, "", new HashMap()),
             jsonObj = JSON.parse(responseData.content),
             jsonLength = (jsonObj.length - 1),
             jsonName = jsonObj[jsonLength].tournament.name,
@@ -36,23 +39,22 @@
             jsonDate = jsonObj[jsonLength].tournament.start_at,
             jsonStarted = jsonObj[jsonLength].tournament.started_at,
             jsonCompleted = jsonObj[jsonLength].tournament.completed_at,
-            jsonSignUrl = jsonObj[jsonLength].tournament.sign_up_url;
-            jsonSignUp = jsonObj[jsonLength].tournament.open_signup;
+            jsonSignUrl = jsonObj[jsonLength].tournament.sign_up_url,
+            jsonSignUp = jsonObj[jsonLength].tournament.open_signup,
+            jsonWinner = ' Champion: ' + $.userPrefix(reportWinner());
 
-        if (jsonState != 'complete') {
-            jsonState = 'Progress: ' + jsonProgress;
-        } else {
-            jsonState = "(Finished)"
+        if (jsonState == 'underway' && jsonProgress >= 0) {
+            jsonState = 'Progress: ' + jsonProgress + '/100%';
         }
 
         if (jsonSignUp != false) {
-          jsonUrl = jsonSignUrl;
+            jsonUrl = jsonSignUrl;
         }
 
         if (jsonTeams != 'true') {
-          jsonTeams = '';
+            jsonTeams = '';
         } else {
-          jsonTeams = 'Team ';
+            jsonTeams = 'Team ';
         }
 
         if (jsonDate === null || jsonLength === undefined) {
@@ -60,12 +62,15 @@
             //$.say($.lang.get('challongeHandler.tournament.404');
             return;
         }
+        if (jsonState != 'complete') {
+            jsonWinner = '';
+        }
 
-        if (jsonProgress === 0) {
+        if (jsonState == 'pending') {
             jsonState = 'Date: ' + Date(jsonDate);
         }
-        $.say('Latest Tournament: ' + jsonGame + ' - ' + jsonTeams + toTitleCase(jsonType) + ' - ('  + jsonCount + '/' + jsonCapCount + ' Challengers) '  + jsonState + ' - ' + jsonUrl);
-        //$.say($.lang.get('challongeHandler.tournament.message', jsonGame, jsonTeams, toTitleCase(jsonType), jsonCount, jsonCapCount, jsonState, jsonUrl));
+        $.say('Latest Tournament: ' + jsonGame + ' - ' + jsonTeams + toTitleCase(jsonType) + ' - (' + jsonCount + '/' + jsonCapCount + ' Challengers) ' + jsonState + jsonWinner + ' - ' + jsonUrl);
+        //$.say($.lang.get('challongeHandler.tournament.message', jsonGame, jsonTeams, toTitleCase(jsonType), jsonCount, jsonCapCount, jsonState, jsonWinner, jsonUrl));
     }
 
     /**
@@ -92,27 +97,27 @@
      * @return registers sender to the latest tournament
      */
     function registerChallenger(sender, action) {
-      var responseData = HttpRequest.getData(HttpRequest.RequestType.GET, tournament, "", new HashMap()),
-      jsonObj = JSON.parse(responseData.content),
-      jsonLength = (jsonObj.length - 1),
-      jsonSignUrl = jsonObj[jsonLength].tournament.sign_up_url,
-      jsonSignUp = jsonObj[jsonLength].tournament.open_signup,
-      jsonID = jsonObj[jsonLength].tournament.url;
+        var responseData = HttpRequest.getData(HttpRequest.RequestType.GET, tournament, "", new HashMap()),
+            jsonObj = JSON.parse(responseData.content),
+            jsonLength = (jsonObj.length - 1),
+            jsonSignUrl = jsonObj[jsonLength].tournament.sign_up_url,
+            jsonSignUp = jsonObj[jsonLength].tournament.open_signup,
+            jsonID = jsonObj[jsonLength].tournament.url;
 
-      if (jsonSignUp === false && action === undefined) {
-          $.say("Please specify a challonge username to register: !signup <challongename>");
-          return;
-        //$.say($.lang.get('challongeHandler.signup.404');
-      } else if (action === undefined){
-        $.say("Signup: " + jsonSignUrl);
-        return;
-          //$.say($.lang.get('challongeHandler.signup.link');
-      } else {
-        var posturl = 'https://api.challonge.com/v1/tournaments/' + jsonID + '/participants.json';
-        $.say($.whisperPrefix(sender) + 'has registered to the tournament as: ' + action + '!');
-        //$.say($.lang.get('challongeHandler.signup.registered');
-        return;
-      }
+        if (jsonSignUp === false && action === undefined) {
+            $.say("Please specify a challonge username to register: !signup <challongename>");
+            return;
+            //$.say($.lang.get('challongeHandler.signup.404');
+        } else if (action === undefined) {
+            $.say("Signup: " + jsonSignUrl);
+            return;
+            //$.say($.lang.get('challongeHandler.signup.link');
+        } else {
+            var posturl = 'https://api.challonge.com/v1/tournaments/' + jsonID + '/participants.json';
+            $.say($.whisperPrefix(sender) + 'has registered to the tournament as: ' + action + '!');
+            //$.say($.lang.get('challongeHandler.signup.registered');
+            return;
+        }
     }
 
     /**
@@ -120,20 +125,41 @@
      * @return Checks to see if the tournament started
      */
     function tournamentStarted(event) {
-      setInterval(function() {
-      responseData = HttpRequest.getData(HttpRequest.RequestType.GET, tournament, "", new HashMap()),
-      jsonObj = JSON.parse(responseData.content),
-      jsonLength = (jsonObj.length - 1),
-      jsonState = jsonObj[jsonLength].tournament.state,
-      jsonName = jsonObj[jsonLength].tournament.name,
-      jsonUrl = jsonObj[jsonLength].tournament.full_challonge_url,
-      jsonGame = jsonObj[jsonLength].tournament.game_name;
+            var responseData = HttpRequest.getData(HttpRequest.RequestType.GET, tournament, "", new HashMap()),
+                jsonObj = JSON.parse(responseData.content),
+                jsonLength = (jsonObj.length - 1),
+                jsonState = jsonObj[jsonLength].tournament.state,
+                jsonProgress = jsonObj[jsonLength].tournament.progress_meter,
+                jsonName = jsonObj[jsonLength].tournament.name,
+                jsonUrl = jsonObj[jsonLength].tournament.full_challonge_url,
+                jsonGame = jsonObj[jsonLength].tournament.game_name;
 
+            if (jsonState == 'underway') {
+              $.say("Tournament: " + jsonName + " for " + jsonGame + " has just started! Checkout the bracket at: " + jsonUrl);
+              return "success";
+              //$.say($.lang.get('challongeHandler.tournament.started');
+            }
+    }
 
-        if (jsonState == 0) {
-          $.say("Tournament: " + jsonName + " for " + jsonGame + " has just started! Checkout the bracket at: " + jsonUrl)
-        }
-      }, 30000);
+    /**
+     * @function tournamentReset
+     * @return Checks to see if the tournament was reset
+     */
+    function tournamentReset(event) {
+            var responseData = HttpRequest.getData(HttpRequest.RequestType.GET, tournament, "", new HashMap()),
+                jsonObj = JSON.parse(responseData.content),
+                jsonLength = (jsonObj.length - 1),
+                jsonState = jsonObj[jsonLength].tournament.state,
+                jsonProgress = jsonObj[jsonLength].tournament.progress_meter,
+                jsonName = jsonObj[jsonLength].tournament.name,
+                jsonUrl = jsonObj[jsonLength].tournament.full_challonge_url,
+                jsonGame = jsonObj[jsonLength].tournament.game_name;
+
+            if (jsonState == 'pending') {
+              $.say("Tournament: " + jsonName + " for " + jsonGame + " was reset! Sign up at: " + jsonUrl);
+              return "success";
+              //$.say($.lang.get('challongeHandler.tournament.started');
+            }
     }
 
     /**
@@ -141,20 +167,19 @@
      * @return Checks to see if the tournament ended
      */
     function tournamentEnded(event) {
-      setInterval(function() {
-      responseData = HttpRequest.getData(HttpRequest.RequestType.GET, tournament, "", new HashMap()),
-      jsonObj = JSON.parse(responseData.content),
-      jsonLength = (jsonObj.length - 1),
-      jsonState = jsonObj[jsonLength].tournament.state,
-      jsonName = jsonObj[jsonLength].tournament.name,
-      jsonUrl = jsonObj[jsonLength].tournament.full_challonge_url,
-      jsonGame = jsonObj[jsonLength].tournament.game_name;
+            var responseData = HttpRequest.getData(HttpRequest.RequestType.GET, tournament, "", new HashMap()),
+                jsonObj = JSON.parse(responseData.content),
+                jsonLength = (jsonObj.length - 1),
+                jsonState = jsonObj[jsonLength].tournament.state,
+                jsonName = jsonObj[jsonLength].tournament.name,
+                jsonUrl = jsonObj[jsonLength].tournament.full_challonge_url,
+                jsonGame = jsonObj[jsonLength].tournament.game_name;
 
-
-        if (jsonState == 'complete') {
-          $.say("Tournament: " + jsonName + " for " + jsonGame + " has just ended! (" + $.userPrefix(reportWinner()) + ") is our new Champion! Checkout the results: " + jsonUrl)
-        }
-      }, 30000);
+            if (jsonState == 'complete') {
+                $.say("Tournament: " + jsonName + " for " + jsonGame + " has just ended! (" + $.userPrefix(reportWinner()) + ") is our new Champion! Checkout the results: " + jsonUrl);
+                return "success";
+                //$.say($.lang.get('challongeHandler.tournament.ended');
+            }
     }
 
     /**
@@ -170,17 +195,22 @@
      * @return checks if a match has ended and reports it in chat
      */
     function reportWinner(string) {
-      participants = 'https://api.challonge.com/v1/tournaments/' + jsonID +'/participants.json?api_key=' + apiKey;
-      responseData = HttpRequest.getData(HttpRequest.RequestType.GET, participants, "", new HashMap()),
-      jsonObj = JSON.parse(responseData.content),
-      jsonLength = (jsonObj.length - 1);
+        var participants = 'https://api.challonge.com/v1/tournaments/' + jsonID + '/participants.json?api_key=' + apiKey,
+            responseData = HttpRequest.getData(HttpRequest.RequestType.GET, participants, "", new HashMap()),
+            jsonObj = JSON.parse(responseData.content),
+            jsonChampion,
+            jsonLength = (jsonObj.length - 1);
 
-      for (jsonLength in jsonObj) {
-         if (jsonObj[jsonLength].participant.final_rank == 1) {
-             jsonWinner = jsonObj[jsonLength].participant.username;
-         }
-      }
-      return jsonWinner;
+        for (jsonLength in jsonObj) {
+            if (jsonObj[jsonLength].participant.final_rank == '1') {
+              if (jsonObj[jsonLength].participant.username === null) {
+                jsonChampion = jsonObj[jsonLength].participant.name;
+              } else {
+                jsonChampion = jsonObj[jsonLength].participant.username;
+              }
+            }
+        }
+        return jsonChampion;
     }
 
     /**
@@ -188,7 +218,9 @@
      * @return Capitalize the first letter of each word
      */
     function toTitleCase(string) {
-      return string.replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();});
+        return string.replace(/\w\S*/g, function(txt) {
+            return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
+        });
     }
 
     /**
@@ -202,11 +234,11 @@
             subAction = args[1];
 
         if (command.equalsIgnoreCase('tournament')) {
-          if (!$.inidb.exists('challonge', 'key')) {
-              $.say('You need to set your Challonge API Key using: !challongekey <api key>');
-              //$.say($.lang.get('challongeHandler.key.missing');
-              return;
-          }
+            if (!$.inidb.exists('challonge', 'key')) {
+                $.say('You need to set your Challonge API Key using: !challongekey <api key>');
+                //$.say($.lang.get('challongeHandler.key.missing');
+                return;
+            }
             getChallongeData()
         }
 
@@ -218,6 +250,36 @@
             registerChallenger(sender, action)
         }
     });
+
+
+function startCycle() {
+    var intervalStart = setInterval(function() {
+      if (tournamentStarted() == 'success') {
+        endCycle();
+        resetCycle();
+        clearTimeout(intervalStart);
+      }
+    }, 30000);
+  }
+
+  function resetCycle() {
+      var intervalReset = setInterval(function() {
+        if (tournamentReset() == 'success') {
+          startCycle();
+          clearTimeout(intervalReset);
+        }
+      }, 30000);
+  }
+
+function endCycle() {
+    var intervalEnd = setInterval(function() {
+      if (tournamentEnded() == 'success') {
+        startCycle();
+        resetCycle();
+        clearTimeout(intervalEnd);
+      }
+    }, 30000);
+}
 
     /**
      * @event initReady

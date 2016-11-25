@@ -15,7 +15,6 @@
         jsonID = jsonObj[jsonLength].tournament.url,
         interval;
         startCycle();
-        resetCycle();
 
 
     /**
@@ -41,7 +40,7 @@
             jsonCompleted = jsonObj[jsonLength].tournament.completed_at,
             jsonSignUrl = jsonObj[jsonLength].tournament.sign_up_url,
             jsonSignUp = jsonObj[jsonLength].tournament.open_signup,
-            jsonWinner = ' Champion: ' + $.userPrefix(reportWinner());
+            jsonWinner = ' Champion: ' + $.userPrefix(reportChampion());
 
         if (jsonState == 'underway' && jsonProgress >= 0) {
             jsonState = 'Progress: ' + jsonProgress + '/100%';
@@ -69,7 +68,7 @@
         if (jsonState == 'pending') {
             jsonState = 'Date: ' + Date(jsonDate);
         }
-        $.say('Latest Tournament: ' + jsonGame + ' - ' + jsonTeams + toTitleCase(jsonType) + ' - (' + jsonCount + '/' + jsonCapCount + ' Challengers) ' + jsonState + jsonWinner + ' - ' + jsonUrl);
+        $.say('Latest Tournament: ' + jsonGame + ' - ' + jsonTeams + toTitleCase(jsonType) + ' - (' + jsonCount + '/' + jsonCapCount + ' Challengers) ' + jsonState + jsonWinner + '- ' + jsonUrl);
         //$.say($.lang.get('challongeHandler.tournament.message', jsonGame, jsonTeams, toTitleCase(jsonType), jsonCount, jsonCapCount, jsonState, jsonWinner, jsonUrl));
     }
 
@@ -176,25 +175,56 @@
                 jsonGame = jsonObj[jsonLength].tournament.game_name;
 
             if (jsonState == 'complete') {
-                $.say("Tournament: " + jsonName + " for " + jsonGame + " has just ended! (" + $.userPrefix(reportWinner()) + ") is our new Champion! Checkout the results: " + jsonUrl);
+                $.say("Tournament: " + jsonName + " for " + jsonGame + " has just ended! (" + $.userPrefix(reportChampion()) + ") is our new Champion! Checkout the results: " + jsonUrl);
                 return "success";
                 //$.say($.lang.get('challongeHandler.tournament.ended');
             }
     }
 
     /**
-     * @function reportMatch
-     * @return checks if a match has ended and reports it in chat
+     * @function playerID
+     * @return Changes participant id to username or name
      */
+     function playerID(string) {
+       var participants = 'https://api.challonge.com/v1/tournaments/' + jsonID + '/participants.json?api_key=' + apiKey,
+           responseData = HttpRequest.getData(HttpRequest.RequestType.GET, participants, "", new HashMap()),
+           jsonObj = JSON.parse(responseData.content),
+           jsonChampion,
+           jsonLength = (jsonObj.length - 1);
+
+       for (jsonLength in jsonObj) {
+           if (jsonObj[jsonLength].participant.id == string) {
+             if (jsonObj[jsonLength].participant.username === null) {
+               Player = jsonObj[jsonLength].participant.name;
+             } else {
+               Player = jsonObj[jsonLength].participant.username;
+             }
+           }
+       }
+       return Player;
+     }
+
+     /**
+      * @function reportMatch
+      * @return checks if a match has ended and reports it in chat
+      */
     function reportMatch(event) {
+      var matches = 'https://api.challonge.com/v1/tournaments/' + jsonID + '/matches.json?api_key=' + apiKey,
+      responseData = HttpRequest.getData(HttpRequest.RequestType.GET, matches, "", new HashMap()),
+      jsonObj = JSON.parse(responseData.content),
+      jsonLength = (jsonObj.length - 1),
+      jsonState = jsonObj[jsonLength].match.state,
+      jsonUnderwar = jsonObj[jsonLength].match.underway_at,
+      jsonWinner = jsonObj[jsonLength].match.winner_id,
+      jsonLoser = jsonObj[jsonLength].match.loser_id;
 
     }
 
     /**
-     * @function reportMatch
+     * @function reportChampion
      * @return checks if a match has ended and reports it in chat
      */
-    function reportWinner(string) {
+    function reportChampion(string) {
         var participants = 'https://api.challonge.com/v1/tournaments/' + jsonID + '/participants.json?api_key=' + apiKey,
             responseData = HttpRequest.getData(HttpRequest.RequestType.GET, participants, "", new HashMap()),
             jsonObj = JSON.parse(responseData.content),
@@ -255,6 +285,7 @@
 function startCycle() {
     var intervalStart = setInterval(function() {
       if (tournamentStarted() == 'success') {
+        matchCycle();
         endCycle();
         resetCycle();
         clearTimeout(intervalStart);
@@ -275,6 +306,15 @@ function endCycle() {
     var intervalEnd = setInterval(function() {
       if (tournamentEnded() == 'success') {
         startCycle();
+        resetCycle();
+        clearTimeout(intervalEnd);
+      }
+    }, 30000);
+}
+
+function matchCycle() {
+    var intervalMatch = setInterval(function() {
+      if (!reportMatch() == null) {
         resetCycle();
         clearTimeout(intervalEnd);
       }

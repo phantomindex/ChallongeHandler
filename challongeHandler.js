@@ -24,6 +24,7 @@
      * @return Retrieves data on the lastest tournament
      */
     function loadChallongeData(event) {
+
         HttpResponse = Packages.com.gmt2001.HttpResponse;
         HttpRequest = Packages.com.gmt2001.HttpRequest;
         HashMap = Packages.java.util.HashMap;
@@ -32,7 +33,12 @@
         responseData = HttpRequest.getData(HttpRequest.RequestType.GET, tournament, "", new HashMap());
         jsonObj = JSON.parse(responseData.content);
         jsonLength = (jsonObj.length - 1);
-        jsonID = jsonObj[jsonLength].tournament.url;
+
+        if ($.inidb.exists('challonge', 'tournamentid')) {
+          jsonID = '/' + $.inidb.get('challonge', 'tournamentid');
+        } else {
+          jsonID = '/' + jsonObj[jsonLength].tournament.url;
+        }
     }
 
     /**
@@ -89,7 +95,27 @@
         $.say('Latest Tournament: ' + jsonGame + ' - ' + jsonTeams + toTitleCase(jsonType) + ' - (' + jsonCount + '/' + jsonCapCount + ' Challengers) ' + jsonState + jsonWinner + ' - ' + jsonUrl);
         //$.say($.lang.get('challongeHandler.tournament.message', jsonGame, jsonTeams, toTitleCase(jsonType), jsonCount, jsonCapCount, jsonState, jsonWinner, jsonUrl));
     }
-
+    /**
+     * @function setTournamentID
+     * @param key
+     * @return set which tournament you want
+     */
+    function setTournamentID(tourID) {
+        if (tourID === undefined) {
+            $.say("Usage: !challongeid <Tournament ID> ");
+            //$.say($.lang.get('challongeHandler.tourID.404');
+            return;
+        } else if (tourID === 'clear') {
+          $.say("Tournament ID cleared");
+          $.inidb.del('challonge', 'tournamentid');
+          return;
+        } else {
+          $.say("Tournament ID set! Key: " + tourID);
+          //$.say($.lang.get('challongeHandler.tourID.success', key);
+          $.inidb.set('challonge', 'tournamentid', tourID);
+          return;
+        }
+    }
     /**
      * @function setChallongeKey
      * @param key
@@ -130,7 +156,7 @@
             return;
             //$.say($.lang.get('challongeHandler.signup.link');
         } else {
-            var posturl = 'https://api.challonge.com/v1/tournaments/' + jsonID + '/participants.json';
+            var posturl = 'https://api.challonge.com/v1/tournaments' + jsonID + '/participants.json';
             $.say($.whisperPrefix(sender) + 'has registered to the tournament as: ' + action + '!');
             //$.say($.lang.get('challongeHandler.signup.registered');
             return;
@@ -204,7 +230,7 @@
      * @return Changes participant id to username or name
      */
     function playerID(string) {
-        var participants = 'https://api.challonge.com/v1/tournaments/' + jsonID + '/participants.json?api_key=' + apiKey,
+        var participants = 'https://api.challonge.com/v1/tournaments' + jsonID + '/participants.json?api_key=' + apiKey,
             responseData = HttpRequest.getData(HttpRequest.RequestType.GET, participants, "", new HashMap()),
             jsonObj = JSON.parse(responseData.content),
             jsonChampion,
@@ -227,7 +253,7 @@
      * @return checks if a match has ended and reports it in chat
      */
     function reportMatch(event) {
-        var matches = 'https://api.challonge.com/v1/tournaments/' + jsonID + '/matches.json?api_key=' + apiKey,
+        var matches = 'https://api.challonge.com/v1/tournaments' + jsonID + '/matches.json?api_key=' + apiKey,
             responseData = HttpRequest.getData(HttpRequest.RequestType.GET, matches, "", new HashMap()),
             jsonObj = JSON.parse(responseData.content),
             jsonLength = (jsonObj.length - 1),
@@ -260,7 +286,7 @@
      * @return checks if a match has ended and reports it in chat
      */
     function reportChampion(string) {
-        var participants = 'https://api.challonge.com/v1/tournaments/' + jsonID + '/participants.json?api_key=' + apiKey,
+        var participants = 'https://api.challonge.com/v1/tournaments' + jsonID + '/participants.json?api_key=' + apiKey,
             responseData = HttpRequest.getData(HttpRequest.RequestType.GET, participants, "", new HashMap()),
             jsonObj = JSON.parse(responseData.content),
             jsonChampion,
@@ -323,6 +349,9 @@
         if (command.equalsIgnoreCase('challongekey')) {
             setChallongeKey(action)
         }
+        if (command.equalsIgnoreCase('challongeid')) {
+            setTournamentID(action)
+        }
 
         if (command.equalsIgnoreCase('signup')) {
             registerChallenger(sender, action)
@@ -375,8 +404,8 @@
         if ($.bot.isModuleEnabled('./handlers/challongeHandler.js')) {
             $.registerChatCommand('./handlers/challongeHandler.js', 'tournament');
             $.registerChatCommand('./handlers/challongeHandler.js', 'challongekey', 1);
+            $.registerChatCommand('./handlers/challongeHandler.js', 'challongeid', 1);
             $.registerChatCommand('./handlers/challongeHandler.js', 'signup');
-            $.registerChatCommand('./handlers/challongeHandler.js', 'try');
         }
     });
 

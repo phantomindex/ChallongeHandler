@@ -197,6 +197,7 @@
         $.say("Challonge API Key set! Key: " + key);
         //$.say($.lang.get('challongeHandler.key.success', key);
         $.inidb.set('challonge', 'key', key);
+        apiKey = $.inidb.get('challonge', 'key');
         return;
     }
 

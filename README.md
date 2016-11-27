@@ -14,5 +14,5 @@ Match results are also sent out.
 **!latest** - Displays the latest tournament created on your account.  
 **!tournament** - Displays the current set tournament created on your account.  
 **!challongekey (challonge API Key)**  
-**!signup** -  Displays the signup link(if enabled) or the url for the tournament
+**!signup** -  Displays the signup link(if enabled) or the url for the tournament  
 **!challongeid (challonge tournament id)**  

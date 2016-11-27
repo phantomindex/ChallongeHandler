@@ -178,6 +178,7 @@
           $.say("Tournament ID set! Key: " + tourID);
           //$.say($.lang.get('challongeHandler.tourID.success', key);
           $.inidb.set('challonge', 'tournamentid', tourID);
+          jsonID = "/" + $.inidb.get('challonge', 'tournamentid');
           return;
         }
     }

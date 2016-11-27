@@ -217,16 +217,16 @@
             $.say("Please specify a challonge username to register: !signup <challongename>");
             return;
             //$.say($.lang.get('challongeHandler.signup.404');
-        } else if (action === undefined) {
+        } else /*if (action === undefined)*/ {
             $.say("Signup: " + jsonSignUrl);
             return;
             //$.say($.lang.get('challongeHandler.signup.link');
-        } else {
+        } /*else {
             var posturl = 'https://api.challonge.com/v1/tournaments' + jsonID + '/participants.json';
             $.say($.whisperPrefix(sender) + 'has registered to the tournament as: ' + action + '!');
             //$.say($.lang.get('challongeHandler.signup.registered');
             return;
-        }
+        }*/
     }
 
     /**

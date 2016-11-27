@@ -1,4 +1,4 @@
-# ChallongeHandler (Alpha) v1.6 for http://challonge.com/
+# ChallongeHandler (BETA) for http://challonge.com/
 Tested on PhantomBot v2.3.4.1
 Retrieves data from Challonge API for tournament brackets
 

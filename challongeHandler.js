@@ -67,7 +67,7 @@
             jsonSignUrl = jsonObj[jsonLength].tournament.sign_up_url,
             jsonSignUp = jsonObj[jsonLength].tournament.open_signup,
             jsonID = '/' + jsonObj[jsonLength].tournament.url,
-            jsonWinner = ' Champion: ' + latestChampion(jsonID);
+            jsonWinner = ' Champion: ' + latestChampion();
 
         if (jsonState == 'underway' && jsonProgress >= 0) {
             jsonState = 'Progress: ' + jsonProgress + '/100%';
